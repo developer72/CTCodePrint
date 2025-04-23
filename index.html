@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create Task Code Print</title>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
+        crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/ace-builds@1.40.1/css/ace.min.css" rel="stylesheet">
+
+    <style type="text/css" media="screen">
+        #editor {
+            height: 600px;
+        }
+
+        .bottom-space {
+            padding-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="p-5 text-center bg-body-tertiary rounded-3" id="header">
+        <h1 class="text-body-emphasis"><img src="codeprinting.png" style="width: 100px;" /> Create Task Code Print</h1>
+    </div>
+
+
+    <div class="row mb-3 text-center">
+        <div class="col-md-8 themed-grid-col">
+            <div class="h4" style="text-align: left;">Paste or type your code below:</div>
+            <div id="editor">function foo(items) {
+                var x = "All this is syntax highlighted";
+                return x;
+                }</div>
+        </div>
+
+        <div class="col-md-4 themed-grid-col">
+            <div class="bottom-space h4">Options</div>
+            <div class="bottom-space" style="padding-left: 20px; padding-right: 20px;"><label class="form-label"
+                    style="float: left;">Font Size:&nbsp;</label><span id="fontSizeDisplay"
+                    style="float: left;">12px</span><span style="float:right;"><button class="btn btn-outline-secondary"
+                        type="button" id="fontReset">Reset Font Size</button></span><br><input type="range"
+                    class="form-range" min="8" max="40" step="1" value="12" id="fontSizeRange"></div>
+            <div class="bottom-space"><button class="btn btn-primary rounded-pill px-3" type="button"
+                    id="printButton">Print Code</button></div>
+        </div>
+    </div>
+    <footer>
+        <p class="text-center text-body-secondary">© 2025 Michael Carlson</p>
+      </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.40.1/ace.js"
+        integrity="sha512-25eRrsJFS8wEcDCHwGoAM24kDiUI54xU9V39wcaT7ZQ3DspVFdop57h1XKOEAfyXEW0ssfQR2XV270/f8g2gJQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.40.1/ext-beautify.min.js"
+        integrity="sha512-uXfi0GwpQZcHIhGOMMHeNYtBSjt7qDXjXHmjShWSp+RWMSmjdy69N7M/pufinvQLv6rSYlpbSXqSnLRzWE952w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.40.1/ext-static_highlight.min.js"
+        integrity="sha512-kzKJmeEmcmuGJMAvtXoK0FNPnyrkrOIyASmEg2yNUXron9qC/Cf5rTQgTSTLr80esrTaGidX7K1iFNNG3LSaVA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+    <script>
+        function setFontSize() {
+            var val = $("#fontSizeRange").val() + "px"
+            $("#lineNumbers").css("font-size", val);
+            $("#fontSizeDisplay").html(val);
+            editor.setFontSize(val);
+        }
+        function resetFont() {
+            document.getElementById("fontSizeRange").value = 12;
+            setFontSize();
+        }
+
+
+        function Print(code, css, removeGutter = false) {
+            try {
+                // Create an iframe
+                var printIframe = document.createElement('iframe');
+                printIframe.style.width = '800px';
+                printIframe.style.height = '400px';
+                printIframe.style.display = 'none'; // Hide the iframe
+
+                document.body.appendChild(printIframe);
+
+                // Get the document of the iframe
+                var printDocument = printIframe.contentDocument || printIframe.contentWindow.document;
+
+                printDocument.write(`<html><head><title>${document.title}</title></head><body>`);
+
+                printDocument.write(`<style> ${css}</style>`)
+
+                if (removeGutter) {
+                    code = code.replaceAll(`<span class="ace_gutter ace_gutter-cell"></span>`, "").replaceAll("ace_show_gutter", "")
+                }
+                printDocument.write(code);
+                printDocument.write("</body></html>");
+
+                printDocument.close();
+
+                printIframe.contentWindow.print();
+
+
+                document.body.removeChild(printIframe);
+                // You  may adjust the delay based on your needs
+            } catch (error) {
+                console.error("Error printing:", error);
+            }
+        }
+
+
+
+        // Function to print code from Ace editor using ext/static_highlight
+        function printCode() {
+            require("ace/config").loadModule("ace/ext/static_highlight", function (m) {
+                var result = m.renderSync(
+                    editor.getValue(), editor.session.getMode(), editor.renderer.theme
+                );
+                var d = document.createElement("div");
+                d.innerHTML = result.html;
+                Print(d.innerHTML, result.css)
+            });
+        }
+
+
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/eclipse");
+        editor.session.setMode("ace/mode/javascript");
+        editor.session.setOption("showPrintMargin", true);
+        editor.session.setOption("printMargin", 80);
+        editor.session.setOption("wrap", "printmargin");
+        editor.session.setOption("tabSize", 4);
+        editor.session.setOption("wrapBehavioursEnabled", true);
+        editor.session.setOption("enableAutoIndent", true);
+        editor.session.setOption("wrapMethod", 'code');
+
+        $("#fontSizeRange").change(setFontSize);
+        document.getElementById("fontSizeRange").addEventListener("input", setFontSize);
+
+        $("#fontReset").click(resetFont);
+        document.getElementById("fontReset").addEventListener("button", resetFont);
+
+
+        // Attach the printCode function to the button click event
+        document.getElementById("printButton").addEventListener("click", printCode);
+    </script>
+</body>
+
+</html>
